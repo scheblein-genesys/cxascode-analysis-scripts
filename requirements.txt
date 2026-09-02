@@ -2,3 +2,5 @@ notebook
 pandas
 requests
 jupyterlab
+matplotlib
+nbstripout

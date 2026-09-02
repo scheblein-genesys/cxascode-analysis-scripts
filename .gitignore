@@ -1,3 +1,9 @@
 vEnv/
 __pycache__
 .ipynb_checkpoints
+.venv
+.vscode
+.env
+**/*.log
+.DS_Store
+notebooks/__pycache__/

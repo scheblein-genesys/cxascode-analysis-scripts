@@ -8,22 +8,56 @@ As a result of these requests, we have written several Python and Jupyter Notebo
 All requirements were captured in a Python `requirements.txt` file.  The libraries can be
 installed using `pip install -r requirements.txt`.
 
+Start Jupyter from the **`notebooks/`** directory (or open notebooks from its workflow subfolders).
+
+```
+notebooks/
+  commonlib/          # shared Python helpers
+  whatisit.ipynb      # classify a capture and pick the right notebook
+  sdk-plan/           # plan-analysis (STDOUT JSON) + sdk-analysis (TF_LOG + sdk_debug)
+  export/             # performance-analysis + hang-analysis (TF_LOG)
+  plan/               # performance-analysis + hang-analysis (TF_LOG)
+  apply/              # performance-analysis + hang-analysis (TF_LOG)
+```
+
 # Configuration
-All paths used in these notebooks are read from commonlib/config.Config class.  This class will read and write based on three environment variables:
+Notebooks read paths from the `commonlib/config.Config` class. Outputs are written to the folder specified in TERRAFORM_LOG_PATH.
+
+Logs are cached for ease of exploration. To reset/ignore cache, set the appropriate environment variable.
 
 ```
-export TERRAFORM_LOG_PATH=""  #Location of the log file
-export NORMALIZED_TERRAFORM_LOG_PATH="" #Output path fo the normalized Terraform log data
-export NORMALIZED_GENESYS_SDK_PATH=""   #Output path ot the normalized SDK data
+export TERRAFORM_LOG_PATH=""        # Input: raw capture file to analyze (required)
+export FORCE_RENORMALIZE=""         # Optional: set to 1 to ignore existing cache and rebuild
+export DISABLE_NORMALIZED_CACHE=""  # Optional: set to 1 to skip cache read/write (in-memory only)
 ```
 
-# Additional notes
-The `sdk-plan-notebooks` directory contains two files: `plan-analysis.ipynb` and `sdk-notebook.ipynb`.  
+# Pick a notebook
 
-The `plan-analysis.ipynb` file is a Jupyter notebook that will take the STDOUT from the running of `terraform plan` or `tofu` plan and parse the results to identify long plan resolution times, drift detection, etc...
+Set **`TERRAFORM_LOG_PATH`** to your log file. Pick a **workflow** and **type**:
 
-The `sdk-notebook.ipynb' will parse the output from a STDOUT run of a `TF_DEBUG=json terraform apply --auto-approve` and will break down the API calls being made in the plan. 
+| Workflow | **Performance** (completed run) | **Hang** (stuck / killed / partial) |
+|---|---|---|
+| **Export** | `export/performance-analysis.ipynb` | `export/hang-analysis.ipynb` |
+| **Plan** | `plan/performance-analysis.ipynb` | `plan/hang-analysis.ipynb` |
+| **Apply** | `apply/performance-analysis.ipynb` | `apply/hang-analysis.ipynb` |
 
-The `notebooks/common-lib` contains Python functions used to carry out various functions in processing.
+**Plan deep dive** (`terraform plan -json`): `sdk-plan/plan-analysis.ipynb`
 
-The `generator` folder is a small Python script used to generate a large number of resources.  This was so we could use it to create enough to parse and log the output.
+**SDK deep dive** (`TF_LOG` and `sdk_debug`): `sdk-plan/sdk-analysis.ipynb`
+
+# Shared library
+
+Python helpers live in **`notebooks/commonlib/`** (`classify_tf_log.py`, `prep_hang_data.py`, `prep_*_data.py`, `gencharts.py`, `config.py`).
+
+# Other tools
+
+- **`log-chomper/`** — CLI for SDK request/response pairing and **response-time percentiles by endpoint** (complements `sdk-plan/sdk-analysis.ipynb`, which focuses on call counts).
+- **`generator/`** — small script to generate many resources so there is enough activity to parse and log.
+
+# Reading results
+
+**Notebooks** are for working a capture: they surface what the log shows — where a run stalled, how API traffic behaved over time, and which layer owns the problem (**terraform**, **provider**, or **sdk**).
+
+**`*-report.json`** is what you export from a hang or performance notebook when you want that summary in a file. Analyze the same workload again (same notebook, new capture) and compare the two reports to see what changed across provider or Terraform versions — without reopening the full log.
+
+Sidecar files, report fields, and **`issue_attribution`** are documented in **[HOW-TO-READ-RESULTS.md](HOW-TO-READ-RESULTS.md)**.
