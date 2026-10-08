@@ -1377,8 +1377,8 @@ def hang_summary_for_workflow(
     counters: HangScanCounters,
     tail_minutes: float,
     workflow: str,
-    min_count: int = 3,
     classification: TfLogClassification | None = None,
+    min_count: int = 3,
 ) -> dict:
     summary = hang_summary(
         counters,
